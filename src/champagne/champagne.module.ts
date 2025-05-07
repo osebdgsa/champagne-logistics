@@ -4,6 +4,6 @@ import { ChampagneService } from './champagne.service';
 
 @Module({
   controllers: [ChampagneController],
-  providers: [ChampagneService]
+  providers: [ChampagneService],
 })
 export class ChampagneModule {}
