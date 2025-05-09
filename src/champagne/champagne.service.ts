@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { ReservationDto } from './dto';
 
 @Injectable()
 export class ChampagneService {
@@ -42,13 +43,66 @@ export class ChampagneService {
     }
   }
 
+  async computeChampagneBottlesPerProperty({
+    startDate,
+    endDate,
+  }: {
+    startDate: string;
+    endDate: string;
+  }): Promise<Record<string, number>> {
+    const limit = 1000;
+    let offset = 0;
+    const propertyChampagneCounts: Record<string, number> = {};
+
+    while (true) {
+      const data = await this.getReservations({
+        startDate,
+        endDate,
+        limit,
+        offset,
+      });
+      const reservations: ReservationDto[] = data?.data?.data;
+
+      if (!reservations || reservations.length === 0) {
+        break; // no more data
+      }
+
+      // Process each reservation in the current batch
+      for (const reservation of reservations) {
+        if (reservation.vip) {
+          const propertyName: string =
+            reservation?.['propertyId'] || 'UnknownProperty';
+          // Increment count for this property
+          propertyChampagneCounts[propertyName] =
+            (propertyChampagneCounts[propertyName] || 0) + 1;
+        }
+      }
+
+      offset += limit; // prepare for next batch
+    }
+
+    return propertyChampagneCounts;
+  }
+
   // Method to fetch reservations with arrival date filtering
-  async getReservations(startDate: string, endDate: string): Promise<any> {
+  async getReservations({
+    startDate,
+    endDate,
+    limit,
+    offset,
+  }: {
+    startDate: string;
+    endDate: string;
+    limit: number;
+    offset: number;
+  }): Promise<any> {
     const token = await this.getAccessToken();
 
     const params = {
       'arrival[gte]': startDate, // arrival greater than or equal to startDate
       'arrival[lte]': endDate, // arrival less than or equal to endDate
+      limit: limit,
+      offset: offset,
     };
 
     try {

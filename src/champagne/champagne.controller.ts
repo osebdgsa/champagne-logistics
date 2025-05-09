@@ -16,10 +16,9 @@ export class ChampagneController {
     }
 
     // Call the service method to fetch reservations
-    const reservations: any = await this.champagneService.getReservations(
+    return await this.champagneService.computeChampagneBottlesPerProperty({
       startDate,
       endDate,
-    );
-    return reservations; // Return the fetched reservations
+    }); // Return the fetched reservations
   }
 }
