@@ -5,8 +5,8 @@ import { ChampagneService } from './champagne.service';
 export class ChampagneController {
   constructor(private readonly champagneService: ChampagneService) {}
 
-  // Endpoint to get reservations for a specific date range
-  @Get('vip-reservations')
+  // Endpoint property champagne allocations for a specific date range
+  @Get('champagne-allocations')
   async getReservations(
     @Query('startDate') startDate: string, // Start date query parameter
     @Query('endDate') endDate: string, // End date query parameter
