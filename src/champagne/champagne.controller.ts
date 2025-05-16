@@ -1,5 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ChampagneService } from './champagne.service';
+import { ChampagneAllocationReponseDto } from './dto/champagne-allocation-reponse.dto';
+import { ChampagneAllocationsQueryDto } from './dto/champagne-allocations-query.dto';
 
 @Controller('champagne-logistics')
 export class ChampagneController {
@@ -7,18 +9,10 @@ export class ChampagneController {
 
   // Endpoint property champagne allocations for a specific date range
   @Get('champagne-allocations')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async getReservations(
-    @Query('startDate') startDate: string, // Start date query parameter
-    @Query('endDate') endDate: string, // End date query parameter
-  ): Promise<any> {
-    if (!startDate || !endDate) {
-      throw new Error('Both startDate and endDate are required');
-    }
-
-    // Call the service method to fetch reservations
-    return await this.champagneService.computeChampagneBottlesPerProperty({
-      startDate,
-      endDate,
-    }); // Return the fetched reservations
+    @Query() query: ChampagneAllocationsQueryDto,
+  ): Promise<ChampagneAllocationReponseDto> {
+    return this.champagneService.computeChampagneBottlesPerProperty(query);
   }
 }

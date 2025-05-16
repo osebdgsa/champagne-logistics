@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { ReservationDto } from './dto';
+import { ChampagneAllocationReponseDto } from './dto/champagne-allocation-reponse.dto';
 
 @Injectable()
 export class ChampagneService {
@@ -9,6 +10,7 @@ export class ChampagneService {
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly baseApiUrl: string;
+  private readonly logger = new Logger(ChampagneService.name);
 
   constructor(private readonly configService: ConfigService) {
     // Initialize readonly variables after configService is available
@@ -36,9 +38,13 @@ export class ChampagneService {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      return response.data.access_token; // Just return the access token
-    } catch (error) {
-      console.error('Error fetching access token:', error);
+      return response.data.access_token;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error('Error fetching access token', error.message);
+      } else {
+        this.logger.error('Unknown error fetching access token', String(error));
+      }
       throw new Error('Failed to fetch access token');
     }
   }
@@ -49,12 +55,13 @@ export class ChampagneService {
   }: {
     startDate: string;
     endDate: string;
-  }): Promise<Record<string, number>> {
+  }): Promise<ChampagneAllocationReponseDto> {
     const limit = 1000;
     let offset = 0;
     const propertyChampagneCounts: Record<string, number> = {};
 
     while (true) {
+      // use strong typing instead of any
       const data = await this.getReservations({
         startDate,
         endDate,
@@ -95,8 +102,13 @@ export class ChampagneService {
     endDate: string;
     limit: number;
     offset: number;
-  }): Promise<any> {
-    const token = await this.getAccessToken();
+  }): Promise<{
+    data: {
+      data: ReservationDto[];
+      total: number;
+    };
+  }> {
+    const token: string = await this.getAccessToken();
 
     const params = {
       'arrival[gte]': startDate, // arrival greater than or equal to startDate
@@ -106,6 +118,7 @@ export class ChampagneService {
     };
 
     try {
+      // use strong typing instead of any
       const response = await axios.get(
         `${this.baseApiUrl}/api/v2/reservations`,
         {
@@ -120,7 +133,7 @@ export class ChampagneService {
 
       return response.data; // Return the reservation data
     } catch (error) {
-      console.error('Error fetching reservations:', error);
+      this.logger.error('Error fetching reservations:', error);
       throw new Error('Failed to fetch reservations');
     }
   }
